@@ -18,7 +18,7 @@ w0 = [0; 0; 0];
 % Sample time
 dt = (1/50);
 % Final time
-tf = 15;
+tf = 5;
 o_des = [0;0;-1]; % hover position
 physics_disturbance = [0;0;0]; % rudimentary wind
 
@@ -79,9 +79,9 @@ problem.func.dynamics = @(t,x,u)( numf(x(1,:), x(2,:), x(3,:),...
 % Time
 %   problem.func.pathObj = @(t,x,u)( sum((x(1,:)-x_f).^2,1) + sum((x(3,:)-z_f).^2,1))
 % problem.func.bndObj = @(t0,x0,tF,xF)(tF-t0);
-%problem.func.pathObj = @(t,x,u)(t);
-problem.func.pathObj = @(t,x,u)( sum((x(1,:) - o_des(1)).^2,1) + ...
-    sum((x(2,:) - o_des(2)).^2,1) + sum((x(3,:) - o_des(3)).^2,1) );
+problem.func.pathObj = @(t,x,u)(t);
+%problem.func.pathObj = @(t,x,u)( sum((x(1,:) - o_des(1)).^2,1) + ...
+%    sum((x(2,:) - o_des(2)).^2,1) + sum((x(3,:) - o_des(3)).^2,1) );
 
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
@@ -136,10 +136,9 @@ soln = optimTraj(problem);
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 
 %%%% Unpack the simulation
-t = linspace(soln.grid.time(1), soln.grid.time(end), soln.grid.time(end)*(1/dt));
+t = linspace(soln.grid.time(1), soln.grid.time(end), soln.grid.time(end)*10*(1/dt));
 x = soln.interp.state(t);
 u = soln.interp.control(t);
-
 
 clf;
 figure(1)

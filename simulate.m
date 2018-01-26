@@ -1,4 +1,8 @@
 function [t, o, theta, odes] = simulate
+    load('traj.mat')
+    xt = x;
+    ut = u;
+    tt = t;
     % Parameters
     g = 9.81; % acceleration of gravity
     m = .7146; % mass
@@ -19,10 +23,10 @@ function [t, o, theta, odes] = simulate
     % Final time
     t1 = 10;
     % Tuning parameters
-    Q = 10000*eye(12);
+    Q = 10000000*eye(12);
     R = eye(4);
     o_des = [0;0;-1]; % hover position
-    wind = [1;0;0]; % rudimentary wind
+    wind = [0;0;0]; % rudimentary wind
     % Derive gain
     xe = [o_des;0;0;0;0;0;0;0;0;0];
     ue = [sqrt(m*g/(4*kF));sqrt(m*g/(4*kF));sqrt(m*g/(4*kF));sqrt(m*g/(4*kF))];
@@ -31,40 +35,27 @@ function [t, o, theta, odes] = simulate
     % Create variables to keep track of time, state, input, and desired position
     ti = t0;
     xi = [o0; theta0; v0; w0];
-    x_log = []; % does this have a purpose?
 
     % Simulate
     for i = 1:(t1/dt)
         tic
-        % decide what traj point to use (find minimum to the time vector)
-        % in traj, increase resolution of interpolation
-        % make it solve faster, check with the one on the github, probably
-        % turn up some tolerances
-        % add logic such that after the trajectory, it goes back to normal
-        % control
-        % recreate an automation script
-        % add wind
-        % check what wind does to something not following the trajectory
-        % check what wind does when perfectly considered within the planner
-        % in a non-traj flight, estimate wind
-        % check this estimate
-        % find a way to pass that estimate into the traj planner
-        % fix the visualize
-        % put this all on the github
-        % write up a thing for the meeting
-        % hit up david again, ask about blade flapping and the drag model
-        % also ask him what he thinks in general
-        % consider that the drag model can be experimentally driven
-        
-        K = control_design_loop(Ac,Bc,Q,R,dt,xi(:,i)-xe,ue);
-        u_desired = -K*(xi(:,i) - xe) + ue;
-        ui = GetBoundedInputs(u_desired,sigmamax);
+        if ti(end) <= tt(end) % if we are still operating within the trajectory regime
+            [~,minTimeIndex] = min(abs(tt - ti(end))); % gets the closest trajectory index for the current timestep
+            xc = xt(:,minTimeIndex); % current state in the trajectory
+            uc = ut(:,minTimeIndex); % current input in the trajectory
+            K = control_design_loop(Ac, Bc, Q, R, dt, xi(:,i) - xc, uc); % K matrix linearizing about the trajectory point
+            u_desired = -K*(xi(:,i) - xc) + uc; % control input for the trajectory point
+        else % if we have finished the trajectory 
+            K = control_design_loop(Ac ,Bc, Q, R, dt, xi(:,i) - xe, ue); % K matrix linearizing about the equilibrium point
+            u_desired = -K*(xi(:,i) - xe) + ue; % control input for the equilibrium point
+        end
+        ui = GetBoundedInputs(u_desired,sigmamax); % throttle for max and min spinrates
         u(:, i+1) = ui; % for the output log
-        [t, x] = ode45(@(t, x) h(t, x, ui, g, m, J, kF, kM, l, wind), [ti(i) ti(i)+dt], xi(:,i));
-        ti(i+1) = t(end);
-        x = x';
-        xi(:,i+1) = x(:,end);
-        loop_time(i+1) = toc;
+        [t, x] = ode45(@(t, x) h(t, x, ui, g, m, J, kF, kM, l, wind), [ti(i) ti(i)+dt], xi(:,i)); % compute the trajectory for the current step
+        ti(i+1) = t(end); % prepare the next time for the next step
+        x = x'; % convert the state to a proper output form
+        xi(:,i+1) = x(:,end); % prepare the state for the next step
+        loop_time(i+1) = toc; % save computation time
     end
 
     % package variables
@@ -94,7 +85,7 @@ function [t, o, theta, odes] = simulate
     save(filename)
     
     % animate the flight
-    % visualize(t, o, theta, odes, 'movie.mp4')
+    visualize(t, o, theta, odes, 'movie.mp4')
 end
 
 function xdot = h(~, x, u, g, m, J, kF, kM, l, wind)

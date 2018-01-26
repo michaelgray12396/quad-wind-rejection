@@ -5,17 +5,10 @@
 \margl1440\margr1440\vieww15200\viewh14640\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs24 \cf0 Start a new github and put everything on that\
-\
-Allow for the created trajectory to get used by the controller\
-	determine the closest trajectory point by min( traj_t - t) and use that\
-	increase the interpolation resolution of the traj\
-	make sure to change the linearization such that the equilibrium point is the current traj point\
+\f0\fs24 \cf0
 \
 Improve the traj solver\
 	consider increasing tolerance\
-	try to implement the true time optimal solution instead of just position minimizing\
-	check if the final time having no lower bound is a factor\
 	see if our old solution was solving faster, check for differences\
 	investigate a new trajectory solver, or look into writing our own\
 \
